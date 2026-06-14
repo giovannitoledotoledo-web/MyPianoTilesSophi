@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Piano Tiles - Sophia</title>
+  <style>
+    :root {
+      --cols: 4;
+      --col-width: 90px;
+      --board-width: 360px;
+      --game-height: 580px;
+      --tile-height: 130px;
+      --accent: #00ffcc;
+      --danger: #ff3355;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      font-family: "Courier New", monospace;
+      user-select: none;
+      background: linear-gradient(180deg, #98ffdc 0%, #4be1ec 45%, #00bfff 100%);
+      overflow-x: hidden;
+    }
+
+    .root {
+      width: min(100vw, 410px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 0 20px;
+    }
+
+    .header, .footer, .rhythm-wrap, .settings {
+      width: var(--board-width);
+      max-width: calc(100vw - 24px);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      color: white;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .stat { display: flex; flex-direction: column; align-items: center; min-width: 58px; }
+    .stat-label { color: rgba(0,0,0,0.45); font-size: 9px; letter-spacing: 2px; font-weight: 900; }
+    .stat-value { color: #fff; font-size: 20px; font-weight: 900; }
+    .title-wrap { display: flex; gap: 4px; align-items: baseline; }
+    .title { color: #fff; font-size: 20px; font-weight: 900; letter-spacing: 2px; }
+    .title-accent { color: #003b46; font-size: 20px; font-weight: 900; letter-spacing: 2px; }
+
+    .settings {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.28);
+      border: 1px solid rgba(255,255,255,0.45);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+      backdrop-filter: blur(8px);
+    }
+
+    .settings-row {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 8px;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 900;
+      color: #003b46;
+    }
+
+    select, input[type="number"], input[type="file"], input[type="range"] {
+      width: 100%;
+      font-family: inherit;
+      font-size: 11px;
+      border: 1px solid rgba(0,0,0,0.18);
+      border-radius: 8px;
+      padding: 7px;
+      background: rgba(255,255,255,0.85);
+      color: #003b46;
+      outline: none;
+    }
+
+    input[type="range"] { padding: 0; }
+
+    .board-wrap {
+      position: relative;
+      width: var(--board-width);
+      max-width: calc(100vw - 24px);
+      height: var(--game-height);
+      background: #111;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid #222;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.28);
+      transition: border-color 0.15s;
+      touch-action: none;
+    }
+
+    .board-wrap.danger {
+      border: 1px solid var(--danger);
+      animation: dangerPulse 0.4s ease-in-out infinite;
+    }
+
+    .col-line { position: absolute; top: 0; width: 1px; height: 100%; background: #1e1e1e; z-index: 1; }
+    .hit-zone { position: absolute; left: 0; width: 100%; height: 2px; z-index: 2; background: rgba(0,255,204,0.25); box-shadow: 0 0 12px rgba(0,255,204,0.4); }
+    .danger .hit-zone { background: rgba(255,51,85,0.5); box-shadow: 0 0 18px rgba(255,51,85,0.6); }
+
+    .danger-label {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--danger);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      z-index: 15;
+      animation: beatFlash 0.4s ease-in-out infinite;
+    }
+
+    .tile {
+      position: absolute;
+      width: calc(var(--col-width) - 8px);
+      height: calc(var(--tile-height) - 8px);
+      border-radius: 7px;
+      z-index: 3;
+      background: linear-gradient(180deg, #1c1c1c 0%, #050505 100%);
+      box-shadow: 0 3px 14px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.04);
+      will-change: transform;
+    }
+
+    .tile.hit { opacity: 0; background: var(--accent); box-shadow: 0 0 28px var(--accent); transition: opacity 0.12s; }
+    .tile.missed { opacity: 0.25; background: var(--danger); box-shadow: 0 0 12px var(--danger); }
+
+    .tap-zone { position: absolute; top: 0; width: var(--col-width); height: 100%; z-index: 10; cursor: pointer; }
+
+    .ripple {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      animation: rippleAnim 0.5s ease-out forwards;
+      z-index: 8;
+      pointer-events: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.82);
+      z-index: 20;
+      backdrop-filter: blur(2px);
+    }
+
+    .overlay-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+      padding: 28px 26px;
+      background: #141414;
+      border-radius: 14px;
+      border: 1px solid #222;
+      box-shadow: 0 0 40px rgba(0,255,204,0.07);
+      min-width: 230px;
+      color: white;
+      text-align: center;
+    }
+
+    .overlay-icon { font-size: 38px; }
+    .overlay-title { color: #fff; font-size: 22px; font-weight: 900; letter-spacing: 3px; }
+    .overlay-subtitle { color: #888; font-size: 11px; letter-spacing: 1px; }
+    .dead-stat { color: #aaa; font-size: 12px; letter-spacing: 1px; }
+
+    button {
+      margin-top: 6px;
+      padding: 11px 32px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .countdown-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 6px 0; }
+    .countdown-label { color: #555; font-size: 10px; letter-spacing: 2px; }
+
+    .rhythm-wrap { margin-top: 10px; }
+    .rhythm-track { position: relative; height: 20px; background: #161616; border-radius: 4px; overflow: hidden; }
+    .rhythm-mark { position: absolute; top: 0; width: 1px; height: 100%; background: #2a2a2a; }
+    .rhythm-danger { position: absolute; top: 0; right: 0; width: 33%; height: 100%; background: rgba(255,51,85,0.08); }
+    .rhythm-cursor { position: absolute; top: 0; width: 6px; height: 100%; border-radius: 3px; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .rhythm-labels { display: flex; justify-content: space-between; margin-top: 3px; }
+    .rhythm-label { color: rgba(0,0,0,0.45); font-size: 9px; letter-spacing: 2px; font-weight: 900; }
+
+    .footer { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .level-label { color: rgba(0,0,0,0.5); font-size: 10px; letter-spacing: 2px; min-width: 44px; font-weight: 900; }
+    .speed-bar { flex: 1; height: 4px; background: rgba(0,0,0,0.25); border-radius: 2px; overflow: hidden; }
+    .speed-fill { height: 100%; background: linear-gradient(90deg, #00ffcc, #ffaa00, #ff3355); border-radius: 2px; transition: width 0.5s ease; }
+
+    @keyframes rippleAnim { 0% { transform: scale(0.3); opacity: 1; } 100% { transform: scale(2.8); opacity: 0; } }
+    @keyframes dangerPulse { 0%, 100% { box-shadow: 0 0 8px #ff3355, 0 18px 45px rgba(0,0,0,0.28), inset 0 0 8px rgba(255,51,85,0.15); } 50% { box-shadow: 0 0 22px #ff3355, 0 18px 45px rgba(0,0,0,0.28), inset 0 0 18px rgba(255,51,85,0.3); } }
+    @keyframes beatFlash { 0% { opacity: 0.9; } 40% { opacity: 0.15; } 100% { opacity: 0.9; } }
+
+    @media (max-width: 390px) {
+      :root { --col-width: calc((100vw - 24px) / 4); --board-width: calc(100vw - 24px); --game-height: 560px; }
+      .title, .title-accent { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="root">
+    <section class="header">
+      <div class="stat"><span class="stat-label">SCORE</span><span id="score" class="stat-value">0</span></div>
+      <div class="title-wrap"><span class="title">PIANO</span><span class="title-accent">TILES</span></div>
+      <div class="stat"><span class="stat-label">COMBO</span><span id="combo" class="stat-value">—</span></div>
+    </section>
+
+    <section class="settings">
+      <div class="settings-row">
+        <label for="songSelect">Canción</label>
+        <select id="songSelect">
+          <option value="">Sin canción predefinida</option>
+          <option value="songs/fur-elise.mp3" data-bpm="118">Fur Elise - 118 BPM</option>
+          <option value="songs/canon.mp3" data-bpm="90">Canon in D - 90 BPM</option>
+          <option value="songs/moonlight.mp3" data-bpm="52">Moonlight Sonata - 52 BPM</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label for="fileInput">MP3 local</label>
+        <input id="fileInput" type="file" accept="audio/*" />
+      </div>
+      <div class="settings-row">
+        <label for="bpmInput">BPM</label>
+        <input id="bpmInput" type="number" min="40" max="220" value="100" />
+      </div>
+      <div class="settings-row">
+        <label for="volumeInput">Volumen</label>
+        <input id="volumeInput" type="range" min="0" max="1" step="0.01" value="0.55" />
+      </div>
+    </section>
+
+    <section id="board" class="board-wrap">
+      <div class="col-line" style="left: var(--col-width);"></div>
+      <div class="col-line" style="left: calc(var(--col-width) * 2);"></div>
+      <div class="col-line" style="left: calc(var(--col-width) * 3);"></div>
+      <div id="hitZone" class="hit-zone"></div>
+      <div id="dangerLabel" class="danger-label" style="display:none;">⚠ ¡RITMO!</div>
+      <div id="tilesLayer"></div>
+      <div id="ripplesLayer"></div>
+      <div class="tap-zone" data-col="0" style="left:0;"></div>
+      <div class="tap-zone" data-col="1" style="left:var(--col-width);"></div>
+      <div class="tap-zone" data-col="2" style="left:calc(var(--col-width) * 2);"></div>
+      <div class="tap-zone" data-col="3" style="left:calc(var(--col-width) * 3);"></div>
+      <div id="overlay" class="overlay"></div>
+    </section>
+
+    <section class="rhythm-wrap">
+      <div class="rhythm-track">
+        <div class="rhythm-mark" style="left:25%;"></div>
+        <div class="rhythm-mark" style="left:50%;"></div>
+        <div class="rhythm-mark" style="left:75%;"></div>
+        <div class="rhythm-danger"></div>
+        <div id="rhythmCursor" class="rhythm-cursor"></div>
+      </div>
+      <div class="rhythm-labels"><span class="rhythm-label">BEAT</span><span class="rhythm-label" style="color:#ff3355;">⚠ DANGER</span></div>
+    </section>
+
+    <section class="footer">
+      <span id="levelLabel" class="level-label">LVL 1</span>
+      <div class="speed-bar"><div id="speedFill" class="speed-fill" style="width:0%;"></div></div>
+      <span id="bpmLabel" class="level-label">BPM 100</span>
+    </section>
+  </main>
+
+  <script>
+    const COLS = 4;
+    const TILE_HEIGHT = 130;
+    const GAME_HEIGHT = window.innerWidth <= 390 ? 560 : 580;
+    const HIT_LINE_Y = GAME_HEIGHT - 70;
+    const DANGER_LEAD_BEATS = 1.5;
+    const COL_NOTES = [261.63, 329.63, 392.00, 440.00];
+
+    const board = document.getElementById('board');
+    const tilesLayer = document.getElementById('tilesLayer');
+    const ripplesLayer = document.getElementById('ripplesLayer');
+    const overlay = document.getElementById('overlay');
+    const scoreEl = document.getElementById('score');
+    const comboEl = document.getElementById('combo');
+    const levelLabel = document.getElementById('levelLabel');
+    const bpmLabel = document.getElementById('bpmLabel');
+    const speedFill = document.getElementById('speedFill');
+    const rhythmCursor = document.getElementById('rhythmCursor');
+    const dangerLabel = document.getElementById('dangerLabel');
+    const hitZone = document.getElementById('hitZone');
+    const songSelect = document.getElementById('songSelect');
+    const fileInput = document.getElementById('fileInput');
+    const bpmInput = document.getElementById('bpmInput');
+    const volumeInput = document.getElementById('volumeInput');
+
+    hitZone.style.top = HIT_LINE_Y + 'px';
+    dangerLabel.style.top = (HIT_LINE_Y - 28) + 'px';
+
+    let phase = 'idle';
+    let tiles = [];
+    let score = 0;
+    let combo = 0;
+    let bestCombo = Number(localStorage.getItem('pianoTilesBestCombo') || '0');
+    let bestScore = Number(localStorage.getItem('pianoTilesBestScore') || '0');
+    let level = 1;
+    let tilesHit = 0;
+    let startTime = 0;
+    let lastBeatSpawned = -1;
+    let tileIdCounter = 0;
+    let animationId = null;
+    let lastFrame = null;
+    let countdownTimer = null;
+    let countdown = 5;
+    let audioCtx = null;
+    let bgAudio = null;
+    let localSongUrl = '';
+
+    function getBoardWidth() { return board.clientWidth; }
+    function getColWidth() { return getBoardWidth() / COLS; }
+    function getBpm() { return Math.max(40, Math.min(220, Number(bpmInput.value) || 100)); }
+    function getBeatMs() { return 60000 / getBpm(); }
+
+    function createAudioCtx() {
+      return new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    function ensureAudioCtx() {
+      if (!audioCtx || audioCtx.state === 'closed') audioCtx = createAudioCtx();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playPianoNote(freq, velocity = 0.7) {
+      ensureAudioCtx();
+      const t = audioCtx.currentTime;
+      const gain = audioCtx.createGain();
+      gain.connect(audioCtx.destination);
+      [0, 4].forEach((detune) => {
+        const osc = audioCtx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        osc.detune.value = detune;
+        osc.connect(gain);
+        osc.start(t);
+        osc.stop(t + 1.8);
+      });
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(velocity, t + 0.005);
+      gain.gain.exponentialRampToValueAtTime(velocity * 0.3, t + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+    }
+
+    function playMissSound() {
+      ensureAudioCtx();
+      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.18, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
+      src.connect(g);
+      g.connect(audioCtx.destination);
+      src.start();
+    }
+
+    function getSelectedSongUrl() {
+      if (localSongUrl) return localSongUrl;
+      return songSelect.value;
+    }
+
+    function startBackgroundSong() {
+      stopBackgroundSong();
+      const url = getSelectedSongUrl();
+      if (!url) return;
+      bgAudio = new Audio(url);
+      bgAudio.loop = true;
+      bgAudio.volume = Number(volumeInput.value);
+      bgAudio.play().catch(() => {
+        console.log('El navegador bloqueó el audio hasta que haya interacción del usuario.');
+      });
+    }
+
+    function stopBackgroundSong() {
+      if (bgAudio) {
+        bgAudio.pause();
+        bgAudio.currentTime = 0;
+        bgAudio = null;
+      }
+    }
+
+    function makeTile(col, beatIndex) {
+      return { id: ++tileIdCounter, col, beatIndex, y: -TILE_HEIGHT - 20, hit: false, missed: false };
+    }
+
+    function addRipple(col, y) {
+      const colWidth = getColWidth();
+      const x = col * colWidth + colWidth / 2;
+      const ripple = document.createElement('div');
+      ripple.className = 'ripple';
+      ripple.style.left = (x - 45) + 'px';
+      ripple.style.top = (y - 45) + 'px';
+      ripplesLayer.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 500);
+    }
+
+    function updateHud() {
+      scoreEl.textContent = score;
+      comboEl.textContent = combo >= 5 ? '×' + combo + '🔥' : (combo || '—');
+      comboEl.style.color = combo >= 5 ? '#00ffcc' : '#fff';
+      levelLabel.textContent = 'LVL ' + level;
+      bpmLabel.textContent = 'BPM ' + getBpm();
+      speedFill.style.width = Math.min(((level - 1) / 8) * 100, 100) + '%';
+    }
+
+    function renderTiles() {
+      tilesLayer.innerHTML = '';
+      const colWidth = getColWidth();
+      for (const tile of tiles) {
+        const el = document.createElement('div');
+        el.className = 'tile' + (tile.hit ? ' hit' : '') + (tile.missed ? ' missed' : '');
+        el.style.left = (tile.col * colWidth + 4) + 'px';
+        el.style.top = tile.y + 'px';
+        el.style.width = (colWidth - 8) + 'px';
+        tilesLayer.appendChild(el);
+      }
+    }
+
+    function setDanger(isDanger) {
+      board.classList.toggle('danger', isDanger && phase === 'playing');
+      dangerLabel.style.display = isDanger && phase === 'playing' ? 'block' : 'none';
+    }
+
+    function showIdleOverlay() {
+      overlay.style.display = 'flex';
+      overlay.innerHTML = `
+        <div class="overlay-card">
+          <div class="overlay-icon">🎹</div>
+          <div class="overlay-title">PIANO TILES</div>
+          <div class="overlay-subtitle">Toca los tiles al ritmo</div>
+          <div class="overlay-subtitle">Puedes usar MP3 local o canción de /songs</div>
+          <div class="dead-stat">Mejor score: <b>${bestScore}</b></div>
+          <button id="startBtn">JUGAR</button>
+        </div>`;
+      document.getElementById('startBtn').addEventListener('click', startGame);
+    }
+
+    function showDeadOverlay() {
+      overlay.style.display = 'flex';
+      overlay.innerHTML = `
+        <div class="overlay-card">
+          <div class="overlay-icon">💀</div>
+          <div class="overlay-title">GAME OVER</div>
+          <div class="dead-stat">Score: <b>${score}</b></div>
+          <div class="dead-stat">Mejor score: <b>${bestScore}</b></div>
+          <div class="dead-stat">Mejor combo: <b>${bestCombo}</b></div>
+          <div class="dead-stat">Nivel: <b>${level}</b></div>
+          <div class="countdown-wrap">
+            <svg viewBox="0 0 48 48" width="64" height="64" style="display:block;">
+              <circle cx="24" cy="24" r="20" fill="none" stroke="#222" stroke-width="4"></circle>
+              <circle id="countCircle" cx="24" cy="24" r="20" fill="none" stroke="#00ffcc" stroke-width="4" stroke-dasharray="125.66" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 24 24)" style="transition:stroke-dashoffset 0.9s linear;"></circle>
+              <text id="countText" x="24" y="29" text-anchor="middle" fill="#fff" font-size="16" font-weight="700" font-family="monospace">5</text>
+            </svg>
+            <div class="countdown-label">Reiniciando…</div>
+          </div>
+          <button id="restartBtn">JUGAR AHORA</button>
+        </div>`;
+      document.getElementById('restartBtn').addEventListener('click', startGame);
+    }
+
+    function startCountdown() {
+      if (countdownTimer) clearInterval(countdownTimer);
+      countdown = 5;
+      showDeadOverlay();
+      countdownTimer = setInterval(() => {
+        countdown--;
+        const text = document.getElementById('countText');
+        const circle = document.getElementById('countCircle');
+        if (text) text.textContent = countdown;
+        if (circle) circle.setAttribute('stroke-dashoffset', String(125.66 * (1 - countdown / 5)));
+        if (countdown <= 0) {
+          clearInterval(countdownTimer);
+          countdownTimer = null;
+          startGame();
+        }
+      }, 1000);
+    }
+
+    function startGame() {
+      ensureAudioCtx();
+      stopBackgroundSong();
+      startBackgroundSong();
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+      phase = 'playing';
+      tiles = [];
+      score = 0;
+      combo = 0;
+      level = 1;
+      tilesHit = 0;
+      tileIdCounter = 0;
+      startTime = performance.now();
+      lastBeatSpawned = -1;
+      lastFrame = null;
+      overlay.style.display = 'none';
+      setDanger(false);
+      updateHud();
+      renderTiles();
+      if (animationId) cancelAnimationFrame(animationId);
+      animationId = requestAnimationFrame(loop);
+    }
+
+    function die() {
+      if (phase !== 'playing') return;
+      phase = 'dead';
+      stopBackgroundSong();
+      playMissSound();
+      bestScore = Math.max(bestScore, score);
+      bestCombo = Math.max(bestCombo, combo);
+      localStorage.setItem('pianoTilesBestScore', String(bestScore));
+      localStorage.setItem('pianoTilesBestCombo', String(bestCombo));
+      setDanger(false);
+      setTimeout(startCountdown, 250);
+    }
+
+    function loop(now) {
+      if (phase !== 'playing') return;
+      const dt = lastFrame ? (now - lastFrame) / 16.67 : 1;
+      lastFrame = now;
+
+      const beatMs = getBeatMs();
+      const elapsed = performance.now() - startTime;
+      const currentBeat = elapsed / beatMs;
+      const beatFrac = currentBeat % 1;
+      const beatFloor = Math.floor(currentBeat);
+      const boardWidth = getBoardWidth();
+      const pxPerMs = GAME_HEIGHT / (DANGER_LEAD_BEATS * beatMs);
+      const speed = pxPerMs * 16.67 * dt;
+
+      rhythmCursor.style.left = Math.max(0, Math.min(boardWidth - 6, beatFrac * boardWidth - 3)) + 'px';
+      let cursorColor = beatFrac > 0.67 ? '#ff3355' : beatFrac > 0.45 ? '#ffaa00' : '#00ffcc';
+      rhythmCursor.style.background = cursorColor;
+      rhythmCursor.style.boxShadow = '0 0 10px ' + cursorColor;
+
+      if (beatFloor > lastBeatSpawned) {
+        lastBeatSpawned = beatFloor;
+        const lastCol = tiles.length ? tiles[tiles.length - 1].col : -1;
+        let col;
+        do { col = Math.floor(Math.random() * COLS); } while (col === lastCol);
+        tiles.push(makeTile(col, beatFloor));
+      }
+
+      let missed = false;
+      tiles = tiles.map((tile) => {
+        const next = { ...tile, y: tile.y + speed };
+        if (!next.hit && !next.missed && next.y > HIT_LINE_Y + TILE_HEIGHT * 0.6) {
+          next.missed = true;
+          missed = true;
+        }
+        return next;
+      });
+
+      if (missed) {
+        renderTiles();
+        die();
+        return;
+      }
+
+      const liveBelow = tiles.filter((t) => !t.hit && !t.missed && t.y > 0);
+      const lowestY = liveBelow.length ? Math.max(...liveBelow.map((t) => t.y)) : 0;
+      setDanger(lowestY > HIT_LINE_Y - 20);
+
+      tiles = tiles.filter((t) => !(t.hit && t.y < -200));
+      renderTiles();
+      animationId = requestAnimationFrame(loop);
+    }
+
+    function handleTap(col, event) {
+      event.preventDefault();
+      if (phase !== 'playing') return;
+      const candidates = tiles.filter((t) => !t.hit && !t.missed && t.col === col && t.y > -TILE_HEIGHT && t.y < HIT_LINE_Y + TILE_HEIGHT * 0.7);
+      if (!candidates.length) {
+        die();
+        return;
+      }
+      const target = candidates.reduce((a, b) => (b.y > a.y ? b : a));
+      tiles = tiles.map((t) => t.id === target.id ? { ...t, hit: true } : t);
+      combo += 1;
+      tilesHit += 1;
+      score += 10 * (combo >= 5 ? 2 : 1);
+      level = Math.floor(tilesHit / 12) + 1;
+      bestCombo = Math.max(bestCombo, combo);
+      playPianoNote(COL_NOTES[col], 0.65);
+      const hitY = Math.max(10, Math.min(target.y + TILE_HEIGHT / 2, GAME_HEIGHT - 10));
+      addRipple(col, hitY);
+      updateHud();
+      renderTiles();
+    }
+
+    document.querySelectorAll('.tap-zone').forEach((zone) => {
+      zone.addEventListener('pointerdown', (e) => handleTap(Number(zone.dataset.col), e));
+      zone.addEventListener('mousedown', (e) => handleTap(Number(zone.dataset.col), e));
+    });
+
+    songSelect.addEventListener('change', () => {
+      localSongUrl = '';
+      fileInput.value = '';
+      const selected = songSelect.options[songSelect.selectedIndex];
+      const bpm = selected?.dataset?.bpm;
+      if (bpm) bpmInput.value = bpm;
+      updateHud();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        if (localSongUrl) URL.revokeObjectURL(localSongUrl);
+        localSongUrl = URL.createObjectURL(file);
+        songSelect.value = '';
+      }
+    });
+
+    volumeInput.addEventListener('input', () => {
+      if (bgAudio) bgAudio.volume = Number(volumeInput.value);
+    });
+
+    bpmInput.addEventListener('input', updateHud);
+
+    showIdleOverlay();
+    updateHud();
+  </script>
+</body>
+</html>
