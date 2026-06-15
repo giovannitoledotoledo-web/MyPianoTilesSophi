@@ -25,7 +25,7 @@
       align-items: flex-start;
       font-family: "Courier New", monospace;
       user-select: none;
-      background: #cccccc;
+      background: linear-gradient(180deg, #98ffdc 0%, #4be1ec 45%, #00bfff 100%);
       overflow-x: hidden;
     }
 
@@ -62,37 +62,43 @@
       display: grid;
       gap: 8px;
       margin-bottom: 10px;
-      padding: 10px;
+      padding: 12px;
       border-radius: 14px;
-      background: rgba(255,255,255,0.28);
-      border: 1px solid rgba(255,255,255,0.45);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-      backdrop-filter: blur(8px);
+      background: #0d0d0d;
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.28);
     }
 
     .settings-row {
       display: grid;
-      grid-template-columns: 80px 1fr;
+      grid-template-columns: 84px 1fr;
       gap: 8px;
       align-items: center;
       font-size: 11px;
       font-weight: 900;
-      color: #003b46;
+      color: #fff;
     }
 
     select, input[type="number"], input[type="file"], input[type="range"] {
       width: 100%;
       font-family: inherit;
       font-size: 11px;
-      border: 1px solid rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.22);
       border-radius: 8px;
       padding: 7px;
-      background: rgba(255,255,255,0.85);
+      background: rgba(255,255,255,0.92);
       color: #003b46;
       outline: none;
     }
 
     input[type="range"] { padding: 0; }
+
+    .hint {
+      color: rgba(255,255,255,0.6);
+      font-size: 9px;
+      line-height: 1.35;
+      margin-top: -2px;
+    }
 
     .board-wrap {
       position: relative;
@@ -102,7 +108,7 @@
       background: linear-gradient(180deg, #98ffdc 0%, #4be1ec 45%, #00bfff 100%);
       overflow: hidden;
       border-radius: 12px;
-      border: 1px solid #222;
+      border: 1px solid rgba(255,255,255,0.5);
       box-shadow: 0 18px 45px rgba(0,0,0,0.28);
       transition: border-color 0.15s;
       touch-action: none;
@@ -113,9 +119,9 @@
       animation: dangerPulse 0.4s ease-in-out infinite;
     }
 
-    .col-line { position: absolute; top: 0; width: 1px; height: 100%; background: #1e1e1e; z-index: 1; }
-    .hit-zone { position: absolute; left: 0; width: 100%; height: 2px; z-index: 2; background: rgba(0,255,204,0.25); box-shadow: 0 0 12px rgba(0,255,204,0.4); }
-    .danger .hit-zone { background: rgba(255,51,85,0.5); box-shadow: 0 0 18px rgba(255,51,85,0.6); }
+    .col-line { position: absolute; top: 0; width: 1px; height: 100%; background: rgba(0,0,0,0.14); z-index: 1; }
+    .hit-zone { position: absolute; left: 0; width: 100%; height: 2px; z-index: 2; background: rgba(0,0,0,0.35); box-shadow: 0 0 12px rgba(0,0,0,0.25); }
+    .danger .hit-zone { background: rgba(255,51,85,0.7); box-shadow: 0 0 18px rgba(255,51,85,0.65); }
 
     .danger-label {
       position: absolute;
@@ -127,17 +133,18 @@
       letter-spacing: 3px;
       z-index: 15;
       animation: beatFlash 0.4s ease-in-out infinite;
+      text-shadow: 0 2px 8px rgba(255,255,255,0.25);
     }
 
     .tile {
       position: absolute;
       width: calc(var(--col-width) - 8px);
       height: calc(var(--tile-height) - 8px);
-      border-radius: 7px;
+      border-radius: 8px;
       z-index: 3;
       background: linear-gradient(180deg, #1c1c1c 0%, #050505 100%);
-      box-shadow: 0 3px 14px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.04);
-      will-change: transform;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+      will-change: transform, top;
     }
 
     .tile.hit { opacity: 0; background: var(--accent); box-shadow: 0 0 28px var(--accent); transition: opacity 0.12s; }
@@ -162,7 +169,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,0.82);
+      background: rgba(0,0,0,0.72);
       z-index: 20;
       backdrop-filter: blur(2px);
     }
@@ -213,7 +220,7 @@
     .rhythm-label { color: rgba(0,0,0,0.45); font-size: 9px; letter-spacing: 2px; font-weight: 900; }
 
     .footer { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-    .level-label { color: rgba(0,0,0,0.5); font-size: 10px; letter-spacing: 2px; min-width: 44px; font-weight: 900; }
+    .level-label { color: rgba(0,0,0,0.55); font-size: 10px; letter-spacing: 2px; min-width: 44px; font-weight: 900; }
     .speed-bar { flex: 1; height: 4px; background: rgba(0,0,0,0.25); border-radius: 2px; overflow: hidden; }
     .speed-fill { height: 100%; background: linear-gradient(90deg, #00ffcc, #ffaa00, #ff3355); border-radius: 2px; transition: width 0.5s ease; }
 
@@ -224,6 +231,7 @@
     @media (max-width: 390px) {
       :root { --col-width: calc((100vw - 24px) / 4); --board-width: calc(100vw - 24px); --game-height: 560px; }
       .title, .title-accent { font-size: 18px; }
+      .settings-row { grid-template-columns: 78px 1fr; }
     }
   </style>
 </head>
@@ -239,10 +247,10 @@
       <div class="settings-row">
         <label for="songSelect">Canción</label>
         <select id="songSelect">
-          <option value="">Sin canción predefinida</option>
-          <option value="songs/fur-elise.mp3" data-key="furElise" data-bpm="118">Fur Elise - 118 BPM</option>
-          <option value="songs/canon.mp3" data-key="canon" data-bpm="90">Canon in D - 90 BPM</option>
-          <option value="songs/moonlight.mp3" data-key="moonlight" data-bpm="52">Moonlight Sonata - 52 BPM</option>
+          <option value="" data-bpm="100" data-pattern="default">Default - 100 BPM</option>
+          <option value="songs/fur-elise.mp3" data-bpm="118" data-pattern="furElise">Fur Elise - 118 BPM</option>
+          <option value="songs/canon.mp3" data-bpm="90" data-pattern="canon">Canon in D - 90 BPM</option>
+          <option value="songs/moonlight.mp3" data-bpm="52" data-pattern="moonlight">Moonlight Sonata - 52 BPM</option>
         </select>
       </div>
       <div class="settings-row">
@@ -257,6 +265,7 @@
         <label for="volumeInput">Volumen</label>
         <input id="volumeInput" type="range" min="0" max="1" step="0.01" value="0.55" />
       </div>
+      <div class="hint">Nota: para las canciones predefinidas sube los MP3 a /songs/. Si falta el MP3, los tiles siguen apareciendo con el patrón de esa canción.</div>
     </section>
 
     <section id="board" class="board-wrap">
@@ -300,38 +309,26 @@
     const DANGER_LEAD_BEATS = 1.5;
     const COL_NOTES = [261.63, 329.63, 392.00, 440.00];
 
-    /*
-      Canciones predefinidas:
-      - El audio MP3 se reproduce normal.
-      - Los tiles ya NO se generan por tiempo fijo de pantalla.
-      - Ahora se generan con un mapa rítmico y su posición depende de bgAudio.currentTime.
-      Eso hace que si el audio se retrasa/adelanta, los tiles vuelvan a sincronizarse.
-
-      pattern:
-      - Cada número es una columna: 0, 1, 2, 3.
-      - -1 significa silencio/descanso.
-      - stepBeats indica cada cuánto se lee el siguiente valor.
-    */
     const SONG_PATTERNS = {
+      default: {
+        step: 1,
+        cols: [0, 1, 2, 3, 2, 1, 0, 2, 1, 3, 2, 0]
+      },
       furElise: {
-        stepBeats: 0.5,
-        offsetSec: 0,
-        pattern: [3,2,3,2,3,0,2,1, -1, 1,2,3, 0,2,3,2, 1,2,0,2]
+        step: 0.5,
+        cols: [2, 1, 2, 1, 2, 3, 1, 0, 1, 2, 0, 1, 2, 3, 2, 1]
       },
       canon: {
-        stepBeats: 0.5,
-        offsetSec: 0,
-        pattern: [0,-1,1,-1,2,-1,3,-1, 2,-1,1,-1,0,-1,2,-1, 3,2,1,0, 1,2,3,2]
+        step: 0.75,
+        cols: [0, 2, 3, 1, 0, 1, 2, 3, 2, 0, 1, 3, 2, 1, 0, 2]
       },
       moonlight: {
-        stepBeats: 0.75,
-        offsetSec: 0,
-        pattern: [0,1,2, 0,1,2, 3,2,1, 3,2,1, 0,-1,2, 1,-1,3]
+        step: 1.5,
+        cols: [0, 2, 1, 3, 0, 1, 2, 1, 0, 3, 2, 1]
       },
-      custom: {
-        stepBeats: 0.5,
-        offsetSec: 0,
-        pattern: [0,1,2,3, 2,1,0,-1, 1,2,3,2]
+      local: {
+        step: 1,
+        cols: [0, 2, 1, 3, 1, 2, 0, 3, 2, 1, 3, 0]
       }
     };
 
@@ -364,29 +361,20 @@
     let level = 1;
     let tilesHit = 0;
     let startTime = 0;
-    let lastBeatSpawned = -1;
-    let nextNoteIndex = 0;
     let tileIdCounter = 0;
     let animationId = null;
-    let lastFrame = null;
     let countdownTimer = null;
     let countdown = 5;
     let audioCtx = null;
     let bgAudio = null;
     let localSongUrl = '';
+    let currentPatternKey = 'default';
+    let currentPattern = SONG_PATTERNS.default;
+    let audioStartedOk = false;
+    let lastMissedTileId = null;
 
     function getBoardWidth() { return board.clientWidth; }
     function getColWidth() { return getBoardWidth() / COLS; }
-    function getActiveSongKey() {
-      if (localSongUrl) return 'custom';
-      const selected = songSelect.options[songSelect.selectedIndex];
-      return selected?.dataset?.key || 'custom';
-    }
-
-    function getActiveSongPattern() {
-      return SONG_PATTERNS[getActiveSongKey()] || SONG_PATTERNS.custom;
-    }
-
     function getBpm() { return Math.max(40, Math.min(220, Number(bpmInput.value) || 100)); }
     function getBeatMs() { return 60000 / getBpm(); }
 
@@ -439,29 +427,72 @@
       return songSelect.value;
     }
 
+    function getSelectedPatternKey() {
+      if (localSongUrl) return 'local';
+      const selected = songSelect.options[songSelect.selectedIndex];
+      return selected?.dataset?.pattern || 'default';
+    }
+
+    function preparePattern() {
+      currentPatternKey = getSelectedPatternKey();
+      currentPattern = SONG_PATTERNS[currentPatternKey] || SONG_PATTERNS.default;
+    }
+
     function startBackgroundSong() {
       stopBackgroundSong();
+      audioStartedOk = false;
       const url = getSelectedSongUrl();
       if (!url) return;
+
       bgAudio = new Audio(url);
       bgAudio.loop = true;
+      bgAudio.preload = 'auto';
       bgAudio.volume = Number(volumeInput.value);
       bgAudio.currentTime = 0;
-      bgAudio.play().catch(() => {
-        console.log('El navegador bloqueó el audio hasta que haya interacción del usuario.');
+
+      bgAudio.addEventListener('playing', () => { audioStartedOk = true; });
+      bgAudio.addEventListener('error', () => {
+        audioStartedOk = false;
+        console.log('No se pudo cargar el MP3. El juego continúa con el patrón visual. Revisa que el archivo exista en /songs/.');
       });
+
+      const playPromise = bgAudio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          audioStartedOk = false;
+          console.log('El navegador bloqueó el audio o el archivo no existe. Los tiles siguen funcionando.');
+        });
+      }
     }
 
     function stopBackgroundSong() {
       if (bgAudio) {
         bgAudio.pause();
-        bgAudio.currentTime = 0;
+        try { bgAudio.currentTime = 0; } catch (e) {}
         bgAudio = null;
       }
+      audioStartedOk = false;
     }
 
-    function makeTile(col, targetBeat) {
-      return { id: ++tileIdCounter, col, targetBeat, y: -TILE_HEIGHT - 20, hit: false, missed: false };
+    function getSongClockMs() {
+      // Esta es la corrección clave: si el MP3 no existe, tarda en cargar o Chrome bloquea el audio,
+      // el juego usa performance.now(). Así los tiles nunca desaparecen por depender de audio.currentTime.
+      if (bgAudio && audioStartedOk && Number.isFinite(bgAudio.currentTime) && bgAudio.currentTime > 0) {
+        return bgAudio.currentTime * 1000;
+      }
+      return performance.now() - startTime;
+    }
+
+    function makeTile(col, beatIndex, patternIndex) {
+      return {
+        id: ++tileIdCounter,
+        col,
+        beatIndex,
+        patternIndex,
+        y: -TILE_HEIGHT,
+        hit: false,
+        missed: false
+      };
     }
 
     function addRipple(col, y) {
@@ -484,10 +515,16 @@
       speedFill.style.width = Math.min(((level - 1) / 8) * 100, 100) + '%';
     }
 
+    function setDanger(isDanger) {
+      board.classList.toggle('danger', isDanger && phase === 'playing');
+      dangerLabel.style.display = isDanger && phase === 'playing' ? 'block' : 'none';
+    }
+
     function renderTiles() {
       tilesLayer.innerHTML = '';
       const colWidth = getColWidth();
       for (const tile of tiles) {
+        if (tile.y < -TILE_HEIGHT - 40 || tile.y > GAME_HEIGHT + TILE_HEIGHT) continue;
         const el = document.createElement('div');
         el.className = 'tile' + (tile.hit ? ' hit' : '') + (tile.missed ? ' missed' : '');
         el.style.left = (tile.col * colWidth + 4) + 'px';
@@ -497,19 +534,14 @@
       }
     }
 
-    function setDanger(isDanger) {
-      board.classList.toggle('danger', isDanger && phase === 'playing');
-      dangerLabel.style.display = isDanger && phase === 'playing' ? 'block' : 'none';
-    }
-
     function showIdleOverlay() {
       overlay.style.display = 'flex';
       overlay.innerHTML = `
         <div class="overlay-card">
           <div class="overlay-icon">🎹</div>
           <div class="overlay-title">PIANO TILES</div>
-          <div class="overlay-subtitle">Toca los tiles al ritmo del MP3</div>
-          <div class="overlay-subtitle">Puedes usar MP3 local o canción de /songs</div>
+          <div class="overlay-subtitle">Los tiles usan patrón y BPM de la canción</div>
+          <div class="overlay-subtitle">Si falta el MP3, el juego sigue visible</div>
           <div class="dead-stat">Mejor score: <b>${bestScore}</b></div>
           <button id="startBtn">JUGAR</button>
         </div>`;
@@ -559,6 +591,7 @@
 
     function startGame() {
       ensureAudioCtx();
+      preparePattern();
       stopBackgroundSong();
       startBackgroundSong();
       if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
@@ -569,10 +602,8 @@
       level = 1;
       tilesHit = 0;
       tileIdCounter = 0;
+      lastMissedTileId = null;
       startTime = performance.now();
-      lastBeatSpawned = -1;
-      nextNoteIndex = 0;
-      lastFrame = null;
       overlay.style.display = 'none';
       setDanger(false);
       updateHud();
@@ -594,59 +625,58 @@
       setTimeout(startCountdown, 250);
     }
 
-    function getCurrentBeat(now) {
-      const beatMs = getBeatMs();
-      const pattern = getActiveSongPattern();
-      if (bgAudio && !Number.isNaN(bgAudio.currentTime)) {
-        return Math.max(0, ((bgAudio.currentTime - pattern.offsetSec) * 1000) / beatMs);
+    function ensureScheduledTiles(currentBeat) {
+      const step = currentPattern.step || 1;
+      const cols = currentPattern.cols || SONG_PATTERNS.default.cols;
+      const firstNeededIndex = Math.max(0, Math.floor((currentBeat - 2) / step));
+      const lastNeededIndex = Math.ceil((currentBeat + DANGER_LEAD_BEATS + 3) / step);
+      const existing = new Set(tiles.map(t => t.patternIndex));
+
+      for (let patternIndex = firstNeededIndex; patternIndex <= lastNeededIndex; patternIndex++) {
+        if (existing.has(patternIndex)) continue;
+        const beatIndex = patternIndex * step;
+        const col = cols[patternIndex % cols.length];
+        tiles.push(makeTile(col, beatIndex, patternIndex));
       }
-      return Math.max(0, (now - startTime) / beatMs);
     }
 
-    function loop(now) {
+    function updateTilePositions(currentBeat) {
+      const travelDistance = HIT_LINE_Y + TILE_HEIGHT;
+      for (const tile of tiles) {
+        const beatsUntilHit = tile.beatIndex - currentBeat;
+        tile.y = HIT_LINE_Y - (beatsUntilHit / DANGER_LEAD_BEATS) * travelDistance;
+
+        if (!tile.hit && !tile.missed && tile.y > HIT_LINE_Y + TILE_HEIGHT * 0.6) {
+          tile.missed = true;
+          lastMissedTileId = tile.id;
+        }
+      }
+
+      tiles = tiles.filter((tile) => {
+        const tooOld = tile.y > GAME_HEIGHT + TILE_HEIGHT;
+        const tooHighAndHit = tile.hit && tile.y < -TILE_HEIGHT;
+        return !tooOld && !tooHighAndHit;
+      });
+    }
+
+    function loop() {
       if (phase !== 'playing') return;
+
       const beatMs = getBeatMs();
-      const currentBeat = getCurrentBeat(now);
+      const elapsed = getSongClockMs();
+      const currentBeat = Math.max(0, elapsed / beatMs);
       const beatFrac = currentBeat % 1;
       const boardWidth = getBoardWidth();
-      const pixelsPerBeat = GAME_HEIGHT / DANGER_LEAD_BEATS;
-      const patternConfig = getActiveSongPattern();
-      const stepBeats = patternConfig.stepBeats || 0.5;
-      const pattern = patternConfig.pattern || SONG_PATTERNS.custom.pattern;
 
       rhythmCursor.style.left = Math.max(0, Math.min(boardWidth - 6, beatFrac * boardWidth - 3)) + 'px';
-      let cursorColor = beatFrac > 0.67 ? '#ff3355' : beatFrac > 0.45 ? '#ffaa00' : '#00ffcc';
+      const cursorColor = beatFrac > 0.67 ? '#ff3355' : beatFrac > 0.45 ? '#ffaa00' : '#00ffcc';
       rhythmCursor.style.background = cursorColor;
       rhythmCursor.style.boxShadow = '0 0 10px ' + cursorColor;
 
-      /*
-        Spawn por mapa musical:
-        Creamos las notas con anticipación para que bajen.
-        Su posición se recalcula con currentBeat, no con frames.
-        Así el tablero sigue al audio real.
-      */
-      const spawnUntilBeat = currentBeat + DANGER_LEAD_BEATS;
-      while ((DANGER_LEAD_BEATS + nextNoteIndex * stepBeats) <= spawnUntilBeat) {
-        const col = pattern[nextNoteIndex % pattern.length];
-        const targetBeat = DANGER_LEAD_BEATS + nextNoteIndex * stepBeats;
-        if (col >= 0 && col < COLS) {
-          tiles.push(makeTile(col, targetBeat));
-        }
-        nextNoteIndex++;
-      }
+      ensureScheduledTiles(currentBeat);
+      updateTilePositions(currentBeat);
 
-      let missed = false;
-      tiles = tiles.map((tile) => {
-        const distanceBeats = tile.targetBeat - currentBeat;
-        const next = { ...tile, y: HIT_LINE_Y - distanceBeats * pixelsPerBeat };
-        if (!next.hit && !next.missed && currentBeat > tile.targetBeat + 0.6) {
-          next.missed = true;
-          missed = true;
-        }
-        return next;
-      });
-
-      if (missed) {
+      if (lastMissedTileId) {
         renderTiles();
         die();
         return;
@@ -656,11 +686,6 @@
       const lowestY = liveBelow.length ? Math.max(...liveBelow.map((t) => t.y)) : 0;
       setDanger(lowestY > HIT_LINE_Y - 20);
 
-      tiles = tiles.filter((t) => {
-        if (t.hit) return currentBeat - t.targetBeat < 0.25;
-        return t.y < GAME_HEIGHT + TILE_HEIGHT;
-      });
-
       renderTiles();
       animationId = requestAnimationFrame(loop);
     }
@@ -668,11 +693,17 @@
     function handleTap(col, event) {
       event.preventDefault();
       if (phase !== 'playing') return;
-      const candidates = tiles.filter((t) => !t.hit && !t.missed && t.col === col && t.y > -TILE_HEIGHT && t.y < HIT_LINE_Y + TILE_HEIGHT * 0.7);
+
+      const candidates = tiles.filter((t) =>
+        !t.hit && !t.missed && t.col === col &&
+        t.y > -TILE_HEIGHT && t.y < HIT_LINE_Y + TILE_HEIGHT * 0.7
+      );
+
       if (!candidates.length) {
         die();
         return;
       }
+
       const target = candidates.reduce((a, b) => (b.y > a.y ? b : a));
       tiles = tiles.map((t) => t.id === target.id ? { ...t, hit: true } : t);
       combo += 1;
@@ -698,7 +729,9 @@
       const selected = songSelect.options[songSelect.selectedIndex];
       const bpm = selected?.dataset?.bpm;
       if (bpm) bpmInput.value = bpm;
+      preparePattern();
       updateHud();
+      if (phase === 'playing') startGame();
     });
 
     fileInput.addEventListener('change', (e) => {
@@ -707,6 +740,11 @@
         if (localSongUrl) URL.revokeObjectURL(localSongUrl);
         localSongUrl = URL.createObjectURL(file);
         songSelect.value = '';
+        currentPatternKey = 'local';
+        currentPattern = SONG_PATTERNS.local;
+        if (!bpmInput.value || Number(bpmInput.value) < 40) bpmInput.value = 100;
+        updateHud();
+        if (phase === 'playing') startGame();
       }
     });
 
@@ -714,8 +752,14 @@
       if (bgAudio) bgAudio.volume = Number(volumeInput.value);
     });
 
-    bpmInput.addEventListener('input', updateHud);
+    bpmInput.addEventListener('input', () => {
+      updateHud();
+      if (phase === 'playing') {
+        startTime = performance.now() - getSongClockMs();
+      }
+    });
 
+    preparePattern();
     showIdleOverlay();
     updateHud();
   </script>
