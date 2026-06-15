@@ -240,9 +240,9 @@
         <label for="songSelect">Canción</label>
         <select id="songSelect">
           <option value="">Sin canción predefinida</option>
-          <option value="songs/fur-elise.mp3" data-bpm="118">Fur Elise - 118 BPM</option>
-          <option value="songs/canon.mp3" data-bpm="90">Canon in D - 90 BPM</option>
-          <option value="songs/moonlight.mp3" data-bpm="52">Moonlight Sonata - 52 BPM</option>
+          <option value="songs/fur-elise.mp3" data-key="furElise" data-bpm="118">Fur Elise - 118 BPM</option>
+          <option value="songs/canon.mp3" data-key="canon" data-bpm="90">Canon in D - 90 BPM</option>
+          <option value="songs/moonlight.mp3" data-key="moonlight" data-bpm="52">Moonlight Sonata - 52 BPM</option>
         </select>
       </div>
       <div class="settings-row">
@@ -300,6 +300,41 @@
     const DANGER_LEAD_BEATS = 1.5;
     const COL_NOTES = [261.63, 329.63, 392.00, 440.00];
 
+    /*
+      Canciones predefinidas:
+      - El audio MP3 se reproduce normal.
+      - Los tiles ya NO se generan por tiempo fijo de pantalla.
+      - Ahora se generan con un mapa rítmico y su posición depende de bgAudio.currentTime.
+      Eso hace que si el audio se retrasa/adelanta, los tiles vuelvan a sincronizarse.
+
+      pattern:
+      - Cada número es una columna: 0, 1, 2, 3.
+      - -1 significa silencio/descanso.
+      - stepBeats indica cada cuánto se lee el siguiente valor.
+    */
+    const SONG_PATTERNS = {
+      furElise: {
+        stepBeats: 0.5,
+        offsetSec: 0,
+        pattern: [3,2,3,2,3,0,2,1, -1, 1,2,3, 0,2,3,2, 1,2,0,2]
+      },
+      canon: {
+        stepBeats: 0.5,
+        offsetSec: 0,
+        pattern: [0,-1,1,-1,2,-1,3,-1, 2,-1,1,-1,0,-1,2,-1, 3,2,1,0, 1,2,3,2]
+      },
+      moonlight: {
+        stepBeats: 0.75,
+        offsetSec: 0,
+        pattern: [0,1,2, 0,1,2, 3,2,1, 3,2,1, 0,-1,2, 1,-1,3]
+      },
+      custom: {
+        stepBeats: 0.5,
+        offsetSec: 0,
+        pattern: [0,1,2,3, 2,1,0,-1, 1,2,3,2]
+      }
+    };
+
     const board = document.getElementById('board');
     const tilesLayer = document.getElementById('tilesLayer');
     const ripplesLayer = document.getElementById('ripplesLayer');
@@ -330,6 +365,7 @@
     let tilesHit = 0;
     let startTime = 0;
     let lastBeatSpawned = -1;
+    let nextNoteIndex = 0;
     let tileIdCounter = 0;
     let animationId = null;
     let lastFrame = null;
@@ -341,6 +377,16 @@
 
     function getBoardWidth() { return board.clientWidth; }
     function getColWidth() { return getBoardWidth() / COLS; }
+    function getActiveSongKey() {
+      if (localSongUrl) return 'custom';
+      const selected = songSelect.options[songSelect.selectedIndex];
+      return selected?.dataset?.key || 'custom';
+    }
+
+    function getActiveSongPattern() {
+      return SONG_PATTERNS[getActiveSongKey()] || SONG_PATTERNS.custom;
+    }
+
     function getBpm() { return Math.max(40, Math.min(220, Number(bpmInput.value) || 100)); }
     function getBeatMs() { return 60000 / getBpm(); }
 
@@ -400,6 +446,7 @@
       bgAudio = new Audio(url);
       bgAudio.loop = true;
       bgAudio.volume = Number(volumeInput.value);
+      bgAudio.currentTime = 0;
       bgAudio.play().catch(() => {
         console.log('El navegador bloqueó el audio hasta que haya interacción del usuario.');
       });
@@ -413,8 +460,8 @@
       }
     }
 
-    function makeTile(col, beatIndex) {
-      return { id: ++tileIdCounter, col, beatIndex, y: -TILE_HEIGHT - 20, hit: false, missed: false };
+    function makeTile(col, targetBeat) {
+      return { id: ++tileIdCounter, col, targetBeat, y: -TILE_HEIGHT - 20, hit: false, missed: false };
     }
 
     function addRipple(col, y) {
@@ -461,7 +508,7 @@
         <div class="overlay-card">
           <div class="overlay-icon">🎹</div>
           <div class="overlay-title">PIANO TILES</div>
-          <div class="overlay-subtitle">Toca los tiles al ritmo</div>
+          <div class="overlay-subtitle">Toca los tiles al ritmo del MP3</div>
           <div class="overlay-subtitle">Puedes usar MP3 local o canción de /songs</div>
           <div class="dead-stat">Mejor score: <b>${bestScore}</b></div>
           <button id="startBtn">JUGAR</button>
@@ -524,6 +571,7 @@
       tileIdCounter = 0;
       startTime = performance.now();
       lastBeatSpawned = -1;
+      nextNoteIndex = 0;
       lastFrame = null;
       overlay.style.display = 'none';
       setDanger(false);
@@ -546,37 +594,52 @@
       setTimeout(startCountdown, 250);
     }
 
+    function getCurrentBeat(now) {
+      const beatMs = getBeatMs();
+      const pattern = getActiveSongPattern();
+      if (bgAudio && !Number.isNaN(bgAudio.currentTime)) {
+        return Math.max(0, ((bgAudio.currentTime - pattern.offsetSec) * 1000) / beatMs);
+      }
+      return Math.max(0, (now - startTime) / beatMs);
+    }
+
     function loop(now) {
       if (phase !== 'playing') return;
-      const dt = lastFrame ? (now - lastFrame) / 16.67 : 1;
-      lastFrame = now;
-
       const beatMs = getBeatMs();
-      const elapsed = performance.now() - startTime;
-      const currentBeat = elapsed / beatMs;
+      const currentBeat = getCurrentBeat(now);
       const beatFrac = currentBeat % 1;
-      const beatFloor = Math.floor(currentBeat);
       const boardWidth = getBoardWidth();
-      const pxPerMs = GAME_HEIGHT / (DANGER_LEAD_BEATS * beatMs);
-      const speed = pxPerMs * 16.67 * dt;
+      const pixelsPerBeat = GAME_HEIGHT / DANGER_LEAD_BEATS;
+      const patternConfig = getActiveSongPattern();
+      const stepBeats = patternConfig.stepBeats || 0.5;
+      const pattern = patternConfig.pattern || SONG_PATTERNS.custom.pattern;
 
       rhythmCursor.style.left = Math.max(0, Math.min(boardWidth - 6, beatFrac * boardWidth - 3)) + 'px';
       let cursorColor = beatFrac > 0.67 ? '#ff3355' : beatFrac > 0.45 ? '#ffaa00' : '#00ffcc';
       rhythmCursor.style.background = cursorColor;
       rhythmCursor.style.boxShadow = '0 0 10px ' + cursorColor;
 
-      if (beatFloor > lastBeatSpawned) {
-        lastBeatSpawned = beatFloor;
-        const lastCol = tiles.length ? tiles[tiles.length - 1].col : -1;
-        let col;
-        do { col = Math.floor(Math.random() * COLS); } while (col === lastCol);
-        tiles.push(makeTile(col, beatFloor));
+      /*
+        Spawn por mapa musical:
+        Creamos las notas con anticipación para que bajen.
+        Su posición se recalcula con currentBeat, no con frames.
+        Así el tablero sigue al audio real.
+      */
+      const spawnUntilBeat = currentBeat + DANGER_LEAD_BEATS;
+      while ((DANGER_LEAD_BEATS + nextNoteIndex * stepBeats) <= spawnUntilBeat) {
+        const col = pattern[nextNoteIndex % pattern.length];
+        const targetBeat = DANGER_LEAD_BEATS + nextNoteIndex * stepBeats;
+        if (col >= 0 && col < COLS) {
+          tiles.push(makeTile(col, targetBeat));
+        }
+        nextNoteIndex++;
       }
 
       let missed = false;
       tiles = tiles.map((tile) => {
-        const next = { ...tile, y: tile.y + speed };
-        if (!next.hit && !next.missed && next.y > HIT_LINE_Y + TILE_HEIGHT * 0.6) {
+        const distanceBeats = tile.targetBeat - currentBeat;
+        const next = { ...tile, y: HIT_LINE_Y - distanceBeats * pixelsPerBeat };
+        if (!next.hit && !next.missed && currentBeat > tile.targetBeat + 0.6) {
           next.missed = true;
           missed = true;
         }
@@ -593,7 +656,11 @@
       const lowestY = liveBelow.length ? Math.max(...liveBelow.map((t) => t.y)) : 0;
       setDanger(lowestY > HIT_LINE_Y - 20);
 
-      tiles = tiles.filter((t) => !(t.hit && t.y < -200));
+      tiles = tiles.filter((t) => {
+        if (t.hit) return currentBeat - t.targetBeat < 0.25;
+        return t.y < GAME_HEIGHT + TILE_HEIGHT;
+      });
+
       renderTiles();
       animationId = requestAnimationFrame(loop);
     }
